@@ -151,7 +151,10 @@ public:
 	}
     
     SymbolTable() {}
-    inline void check(string cmd, string para1, string para2);
+	inline bool stringToBool(string str) {
+		return true ? str == "true" : false;
+	}
+    inline void check(string cmd, string para1, string *paraList, string para, string isStatic);
 	inline void insert(string id, string *paraList, string retType, bool isStatic);
 	inline void assign(string id, string value);
 	inline void begin();

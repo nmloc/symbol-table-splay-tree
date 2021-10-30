@@ -69,41 +69,51 @@ void SymbolTable::print() {
     preOrderTraversal(root);
 }
 
-void SymbolTable::check(string cmd, string para1, string para2) {
+void SymbolTable::check(string cmd, string id, string *paraList, string para, string isStatic) { // para is retType or value
     if (cmd == "INSERT")
-		insert(para1, para2);
+		insert(id, paraList, para, stringToBool(isStatic));
 	else if (cmd == "ASSIGN")
-		assign(para1, para2);
+		assign(id, para);
 	else if (cmd == "BEGIN")
 		begin();
 	else if (cmd == "END")
 		end();
 	else if (cmd == "LOOKUP")
-		lookup(para1);
+		lookup(id);
 	else if (cmd == "PRINT")
 		print();
 	else {
-		string error = cmd + " " + para1 + " " + para2;
+		string subError;
+
+		if (paraList != NULL) {
+			subError = '(' + paraList[0] + ',';
+			for (int i = 1; i < (sizeof(paraList) / sizeof(paraList[0])); i++) {
+				subError = subError + ',' + paraList[i];
+			}
+			subError += ")-> ";
+		}
+
+		string error = cmd + " " + id + " " + subError + para + " " + isStatic;
 		throw InvalidInstruction(error);
 	}
 }
 
 void SymbolTable::run(string filename)
 {
-    ifstream openFile(filename);
-	if (openFile.is_open())
+    ifstream inputFile(filename);
+	if (inputFile.is_open())
 	{
-		string buffer;
-		while (getline(openFile, buffer)) {
+		string line;
+		while (getline(inputFile, line)) {
 			string inputString[4] = {"", "", "", ""};
-			int beginPos = 0, currPos = 0, numOfChar = 0, paramNum = 0, strLen = buffer.length();
+			int beginPos = 0, currPos = 0, numOfChar = 0, paramNum = 0, strLen = line.length();
 			while (true) {
 				if (currPos >= strLen) {
-					inputString[paramNum++] = buffer.substr(beginPos, numOfChar);
+					inputString[paramNum++] = line.substr(beginPos, numOfChar);
 					break;
 				}
-				if (buffer[currPos] == ' ') {
-					inputString[paramNum++] = buffer.substr(beginPos, numOfChar);
+				if (line[currPos] == ' ') {
+					inputString[paramNum++] = line.substr(beginPos, numOfChar);
 					beginPos = currPos + 1;
 					numOfChar = 0;
 				}
@@ -112,12 +122,38 @@ void SymbolTable::run(string filename)
 				}
 				currPos++;
 			}
+
+			int paraNumInFuncType;
+			if (inputString[2][0] == ' ') {
+				paraNumInFuncType = 0;
+			}
+			else {
+				paraNumInFuncType = 1;
+			}
+			for (int i = 0; i < inputString[2].length(); i++) {
+				if (inputString[2][i] == ',') paraNumInFuncType++;
+			}
+			string funcType[paraNumInFuncType];
+			int i = 0;
+			for (int j = 0; j < inputString[2].length(); j++) {
+				if (inputString[2][i] == '(' 
+				|| inputString[2][i] == ')'
+				|| inputString[2][i] == '-') {
+					continue;
+				}
+				else if (inputString[2][i] == ',' 
+				|| inputString[2][i] == '>') {
+					i++;
+					continue;
+				}
+				else funcType[i] += inputString[j];
+			}
 			if (inputString[0] != "")	{
-				check(inputString[0], inputString[1], inputString[2]);
+				check(inputString[0], inputString[1], funcType, funcType[paraNumInFuncType - 1], inputString[3]);
 			}
 		}
 		if (currentScope > 0)
 			throw UnclosedBlock(currentScope);
-		openFile.close();
+		inputFile.close();
 	}
 }
