@@ -1,20 +1,23 @@
 #include "SymbolTable.h"
 
 void SymbolTable::insert(string id, string *paraList, string retType, bool isStatic) {
+	int sizeOfParaList = sizeof(paraList) / sizeof(*paraList);
 	Symbol *node = new Symbol();
-    node->parent = nullptr;
-    node->left = nullptr;
-    node->right = nullptr;
     node->id = id;
-
-	if (paraList) {
-		for(int i = 0; i<(sizeof(paraList)/sizeof(paraList[0])); i++) {
+	if (sizeOfParaList > 1) {
+		for(int i = 0; i < sizeOfParaList - 1; i++) {
             node->paraList[i] = paraList[i];
         }
 	}
 
+	node->retType = paraList[sizeOfParaList - 1];
+
 	if (isStatic) node->scopeLevel = 0;
 	else node->scopeLevel = this->currentScope;
+
+	node->parent = nullptr;
+    node->left = nullptr;
+    node->right = nullptr;
 
     Symbol *y = nullptr;
     Symbol *x = this->root;
@@ -40,6 +43,9 @@ void SymbolTable::insert(string id, string *paraList, string retType, bool isSta
 
     // splay the node
     splay(node);
+
+	// reply from INSERT cmd
+	cout << "num of comparison" << "num of splay operations" << endl;
 }
 
 void SymbolTable::assign(string id, string value) {
@@ -61,8 +67,9 @@ void SymbolTable::lookup(string id) {
 	Symbol *x = lookupRecursive(this->root, id);
     if (x) {
 		splay(x);
+		cout << x->scopeLevel << endl;
 	}
-	cout << x->scopeLevel << endl;
+	else throw Undeclared(id);
 }
 
 void SymbolTable::print() {
@@ -136,13 +143,10 @@ void SymbolTable::run(string filename)
 			string funcType[paraNumInFuncType];
 			int i = 0;
 			for (int j = 0; j < inputString[2].length(); j++) {
-				if (inputString[2][i] == '(' 
-				|| inputString[2][i] == ')'
-				|| inputString[2][i] == '-') {
+				if (inputString[2][i] == '(' || inputString[2][i] == ')' || inputString[2][i] == '-') {
 					continue;
 				}
-				else if (inputString[2][i] == ',' 
-				|| inputString[2][i] == '>') {
+				else if (inputString[2][i] == ',' || inputString[2][i] == '>') {
 					i++;
 					continue;
 				}

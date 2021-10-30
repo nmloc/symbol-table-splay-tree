@@ -5,7 +5,7 @@
 class Symbol {
 public:
     string id;
-    string paraList[10];
+    string *paraList; // array of list of para in function type
     string retType;
     int scopeLevel;
     Symbol *parent, *left, *right;
