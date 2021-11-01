@@ -1,4 +1,4 @@
 cls
-g++ main.cpp SymbolTable.cpp -o output
+g++ main.cpp SymbolTable.cpp -o app
 ./output test.txt
 rm output.exe

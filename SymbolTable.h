@@ -15,7 +15,12 @@ class SymbolTable
 {
 public:
     Symbol *root;
-    int currentScope = 0;
+    int currentScope;
+
+	SymbolTable() {
+		root = nullptr;
+		currentScope = 0;
+	}
 
 	void leftRotate(Symbol *x) {
         Symbol *y = x->right;
@@ -146,11 +151,49 @@ public:
 		} 
 	}
 
-	void deleteNode(Symbol *node) {
-		
+	void deleteRecursive(Symbol *node, string id) {
+		Symbol *x = nullptr;
+		Symbol *t, *s;
+		while (node != nullptr){
+			if (node->id.compare(id) == 0) {
+				x = node;
+			}
+
+			if (node->id.compare(id) <= 0) {
+				node = node->right;
+			} else {
+				node = node->left;
+			}
+		}
+
+		// Couldn't find key in the tree
+		if (x == nullptr) {
+			return;
+		}
+		split(x, s, t); // split the tree
+		if (s->left){ // remove x
+			s->left->parent = nullptr;
+		}
+		root = join(s->left, t);
+		delete(s);
+		s = nullptr;
+	}
+
+	void deleteNode(string id) {
+		deleteRecursive(root, id);
+	}
+
+	void deleteInPreOrder(Symbol *node) {
+		if (node != nullptr) {
+			cout << node->id << endl;
+			preOrderTraversal(node->left);
+			preOrderTraversal(node->right);
+			if (node->scopeLevel == currentScope && node->scopeLevel != 0) {
+				deleteNode(node->id);
+			}
+		} 
 	}
     
-    SymbolTable() {}
 	inline bool stringToBool(string str) {
 		return true ? str == "true" : false;
 	}

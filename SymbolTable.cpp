@@ -2,6 +2,8 @@
 
 void SymbolTable::insert(string id, string *paraList, string retType, bool isStatic) {
 	int sizeOfParaList = sizeof(paraList) / sizeof(*paraList);
+	int compareNum = 0;
+	int splayNum = 0;
 	Symbol *node = new Symbol();
     node->id = id;
 	if (sizeOfParaList > 1) {
@@ -29,6 +31,7 @@ void SymbolTable::insert(string id, string *paraList, string retType, bool isSta
         } else {
             x = x->right;
         }
+		compareNum++;
     }
 
     // y is parent of x
@@ -37,15 +40,20 @@ void SymbolTable::insert(string id, string *paraList, string retType, bool isSta
         root = node;
     } else if (node->id.compare(y->id) < 0) {
         y->left = node;
+		compareNum++;
     } else {
         y->right = node;
+		compareNum++;
     }
 
     // splay the node
-    splay(node);
+	while (node->id.compare(root->id) != 0) {
+    	splay(node);
+		splayNum++;
+	}
 
 	// reply from INSERT cmd
-	cout << "num of comparison" << "num of splay operations" << endl;
+	cout << compareNum << " " << splayNum << endl;
 }
 
 void SymbolTable::assign(string id, string value) {
@@ -57,10 +65,17 @@ void SymbolTable::assign(string id, string value) {
 
 void SymbolTable::begin() {
     this->currentScope++;
+
 }
 
 void SymbolTable::end() {
-    this->currentScope--;
+	if (currentScope <= 0) {
+		throw UnknownBlock();
+	}
+	else {
+		deleteInPreOrder(root);
+		this->currentScope--;
+	}
 }
 
 void SymbolTable::lookup(string id) {
@@ -93,11 +108,11 @@ void SymbolTable::check(string cmd, string id, string *paraList, string para, st
 		string subError;
 
 		if (paraList != NULL) {
-			subError = '(' + paraList[0] + ',';
-			for (int i = 1; i < (sizeof(paraList) / sizeof(paraList[0])); i++) {
+			subError = '(' + paraList[0];
+			for (int i = 1; i < (sizeof(paraList) / sizeof(*paraList)); i++) {
 				subError = subError + ',' + paraList[i];
 			}
-			subError += ")-> ";
+			subError += ")->";
 		}
 
 		string error = cmd + " " + id + " " + subError + para + " " + isStatic;
@@ -130,30 +145,40 @@ void SymbolTable::run(string filename)
 				currPos++;
 			}
 
-			int paraNumInFuncType;
-			if (inputString[2][0] == ' ') {
-				paraNumInFuncType = 0;
-			}
-			else {
-				paraNumInFuncType = 1;
+			int eleNum_funcType = 1;
+			if (inputString[2][0] == '(') {
+				eleNum_funcType++;
 			}
 			for (int i = 0; i < inputString[2].length(); i++) {
-				if (inputString[2][i] == ',') paraNumInFuncType++;
+				if (inputString[2][i] == ',') eleNum_funcType++;
 			}
-			string funcType[paraNumInFuncType];
+			string funcType[10];
 			int i = 0;
 			for (int j = 0; j < inputString[2].length(); j++) {
-				if (inputString[2][i] == '(' || inputString[2][i] == ')' || inputString[2][i] == '-') {
+				if (inputString[2][j] == '(' || inputString[2][j] == ')' || inputString[2][j] == '-') {
 					continue;
 				}
-				else if (inputString[2][i] == ',' || inputString[2][i] == '>') {
+				else if (inputString[2][j] == ',' || inputString[2][j] == '>') {
 					i++;
 					continue;
 				}
-				else funcType[i] += inputString[j];
+				else {
+					funcType[i] += inputString[2][j];
+				}
 			}
 			if (inputString[0] != "")	{
-				check(inputString[0], inputString[1], funcType, funcType[paraNumInFuncType - 1], inputString[3]);
+				if (eleNum_funcType > 1) {
+					string args_funcType[eleNum_funcType - 1];
+					string retType = funcType[eleNum_funcType - 1];
+					for (int i = 0; i < eleNum_funcType - 1; i++) {
+						args_funcType[i] = funcType[i];
+					}
+					check(inputString[0], inputString[1], args_funcType, retType, inputString[3]);
+				}
+				else {
+					// funcType[0] here is retType
+					check(inputString[0], inputString[1], nullptr, funcType[0], inputString[3]);
+				}
 			}
 		}
 		if (currentScope > 0)
