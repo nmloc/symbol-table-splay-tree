@@ -5,7 +5,8 @@
 class Symbol {
 public:
     string id;
-    string *paraList; // array of list of para in function type
+	bool isFunction;
+    string paraList[10]; // array of list of para in function type
     string retType;
     int scopeLevel;
     Symbol *parent, *left, *right;
@@ -197,9 +198,12 @@ public:
 	inline bool stringToBool(string str) {
 		return true ? str == "true" : false;
 	}
-    inline void check(string cmd, string para1, string *paraList, string para, string isStatic);
-	inline void insert(string id, string *paraList, string retType, bool isStatic);
-	inline void assign(string id, string value);
+	inline string boolToString(bool b)
+	{
+		return b ? "true" : "false";
+	}
+	inline void insert(string id, string *paraList, int sizeOfParaList, string retType, bool isStatic, bool isFunction);
+	inline void assign(string id, string value, string *paraList, bool isFunction);
 	inline void begin();
 	inline void end();
 	inline void lookup(string id);

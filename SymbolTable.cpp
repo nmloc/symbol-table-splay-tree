@@ -1,18 +1,32 @@
 #include "SymbolTable.h"
 
-void SymbolTable::insert(string id, string *paraList, string retType, bool isStatic) {
-	int sizeOfParaList = sizeof(paraList) / sizeof(*paraList);
+void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string retType, bool isStatic, bool isFunction) {
+	if (sizeOfParaList > 0 && currentScope != 0) {
+		string subError;
+		if (paraList != NULL) {
+			subError = '(' + paraList[0];
+			for (int i = 1; i < sizeOfParaList; i++) {
+				subError = subError + ',' + paraList[i];
+			}
+			subError += ")->";
+		}
+
+		string error = "INSERT " + id + " " + subError + retType + " " + boolToString(isStatic);
+		throw InvalidDeclaration(error);
+	}
+	// CHUA CHECK REDECLARE
 	int compareNum = 0;
 	int splayNum = 0;
 	Symbol *node = new Symbol();
     node->id = id;
+	node->isFunction = isFunction;
 	if (sizeOfParaList > 1) {
-		for(int i = 0; i < sizeOfParaList - 1; i++) {
+		for(int i = 0; i < sizeOfParaList; i++) {
             node->paraList[i] = paraList[i];
         }
 	}
 
-	node->retType = paraList[sizeOfParaList - 1];
+	node->retType = retType;
 
 	if (isStatic) node->scopeLevel = 0;
 	else node->scopeLevel = this->currentScope;
@@ -40,10 +54,10 @@ void SymbolTable::insert(string id, string *paraList, string retType, bool isSta
         root = node;
     } else if (node->id.compare(y->id) < 0) {
         y->left = node;
-		compareNum++;
+		//compareNum++;
     } else {
         y->right = node;
-		compareNum++;
+		//compareNum++;
     }
 
     // splay the node
@@ -56,11 +70,64 @@ void SymbolTable::insert(string id, string *paraList, string retType, bool isSta
 	cout << compareNum << " " << splayNum << endl;
 }
 
-void SymbolTable::assign(string id, string value) {
+void SymbolTable::assign(string id, string value, string *paraList, bool isFunction) {
     regex rNum("[0-9]+");
 	regex rString("['][ a-zA-Z0-9]*[']");
 	regex rId("[a-z][_a-zA-Z0-9]*");
+	regex rFuncCall("([a-z][_a-zA-Z0-9]*)[(]((([0-9]+)|(['][ a-zA-Z0-9]*['])|([a-z][_a-zA-Z0-9]*))([,](([0-9]+)|(['][ a-zA-Z0-9]*['])|([a-z][_a-zA-Z0-9]*)))*)?[)]");
 	string error = "ASSIGN " + id + " " + value;
+
+	Symbol *foundNode = lookupRecursive(root, id);
+
+	if (!foundNode) throw Undeclared(error);
+	else {
+
+	}
+
+	if (regex_match(value, rNum)) {
+		if (checkId == nullptr)	throw Undeclared(error);
+		else {
+			if (checkId->type == "number") {
+				cout << "success" << endl;
+			}
+			else throw TypeMismatch(error);
+		}
+	}
+	else if (regex_match(value, rString)) {
+		if (checkId == nullptr) throw Undeclared(error);
+		else {
+			if (checkId->type == "string") {
+				cout << "success" << endl;
+			}
+			else throw TypeMismatch(error);
+		}
+	}
+	else if (regex_match(value, rId)) {
+		if (checkValue == nullptr) throw Undeclared(value);
+		else {
+			if (checkId == nullptr) throw Undeclared(id);
+			else {
+				if (checkValue->type == checkId->type) {
+					cout << "success" << endl;
+				}
+				else throw TypeMismatch(error);
+			}
+		}
+	}
+	else if (regex_match(value, rFuncCall)) {
+		if (checkValue == nullptr) throw Undeclared(value);
+		else {
+			if (checkId == nullptr) throw Undeclared(id);
+			else {
+				if (checkValue->type == checkId->type) {
+					cout << "success" << endl;
+				}
+				else throw TypeMismatch(error);
+			}
+		}
+	}
+	else
+		throw TypeMismatch(error);
 }
 
 void SymbolTable::begin() {
@@ -91,35 +158,6 @@ void SymbolTable::print() {
     preOrderTraversal(root);
 }
 
-void SymbolTable::check(string cmd, string id, string *paraList, string para, string isStatic) { // para is retType or value
-    if (cmd == "INSERT")
-		insert(id, paraList, para, stringToBool(isStatic));
-	else if (cmd == "ASSIGN")
-		assign(id, para);
-	else if (cmd == "BEGIN")
-		begin();
-	else if (cmd == "END")
-		end();
-	else if (cmd == "LOOKUP")
-		lookup(id);
-	else if (cmd == "PRINT")
-		print();
-	else {
-		string subError;
-
-		if (paraList != NULL) {
-			subError = '(' + paraList[0];
-			for (int i = 1; i < (sizeof(paraList) / sizeof(*paraList)); i++) {
-				subError = subError + ',' + paraList[i];
-			}
-			subError += ")->";
-		}
-
-		string error = cmd + " " + id + " " + subError + para + " " + isStatic;
-		throw InvalidInstruction(error);
-	}
-}
-
 void SymbolTable::run(string filename)
 {
     ifstream inputFile(filename);
@@ -144,41 +182,84 @@ void SymbolTable::run(string filename)
 				}
 				currPos++;
 			}
-
-			int eleNum_funcType = 1;
-			if (inputString[2][0] == '(') {
-				eleNum_funcType++;
-			}
-			for (int i = 0; i < inputString[2].length(); i++) {
-				if (inputString[2][i] == ',') eleNum_funcType++;
-			}
-			string funcType[10];
-			int i = 0;
-			for (int j = 0; j < inputString[2].length(); j++) {
-				if (inputString[2][j] == '(' || inputString[2][j] == ')' || inputString[2][j] == '-') {
-					continue;
-				}
-				else if (inputString[2][j] == ',' || inputString[2][j] == '>') {
-					i++;
-					continue;
-				}
-				else {
-					funcType[i] += inputString[2][j];
-				}
-			}
-			if (inputString[0] != "")	{
-				if (eleNum_funcType > 1) {
+			// INSERT cmd
+			if (inputString[0] == "INSERT") {
+				int eleNum_funcType = 1;
+				// INSERT function type
+				if (inputString[2][0] == '(' && inputString[2][1] != ')') {
+					eleNum_funcType++;
+					// split value of function type
+					for (int i = 0; i < inputString[2].length(); i++) {
+						if (inputString[2][i] == ',') eleNum_funcType++;
+					}
+					string funcType[10];
+					int i = 0;
+					for (int j = 0; j < inputString[2].length(); j++) {
+						if (inputString[2][j] == '(' || inputString[2][j] == ')' || inputString[2][j] == '-')
+							continue;
+						else if (inputString[2][j] == ',' || inputString[2][j] == '>') {
+							i++;
+							continue;
+						}
+						else funcType[i] += inputString[2][j];
+					}
 					string args_funcType[eleNum_funcType - 1];
 					string retType = funcType[eleNum_funcType - 1];
 					for (int i = 0; i < eleNum_funcType - 1; i++) {
 						args_funcType[i] = funcType[i];
 					}
-					check(inputString[0], inputString[1], args_funcType, retType, inputString[3]);
+					if (inputString[2][0] == '(' && inputString[2][1] != ')')
+					// INSERT function type with at least 1 para
+						insert(inputString[1], args_funcType, eleNum_funcType - 1, retType, stringToBool(inputString[3]), true);
+					else
+					// INSERT function type with no para
+						insert(inputString[1], nullptr, 0, funcType[0], stringToBool(inputString[3]), true);
 				}
-				else {
-					// funcType[0] here is retType
-					check(inputString[0], inputString[1], nullptr, funcType[0], inputString[3]);
+				// INSERT with type "string" or "number"
+				else insert(inputString[1], nullptr, 0, inputString[2], stringToBool(inputString[3]), false);
+			}
+			// ASSIGN cmd
+			else if (inputString[0] == "ASSIGN") {
+				// split value of function call
+				if (inputString[2][inputString[2].length() - 1] == ')') {
+					string name_funcCall;
+					string para_funcCall[10];
+					int dataPos = 0;
+					int commaCount = 0;
+					while (inputString[2][dataPos] != '(') {
+						name_funcCall += inputString[2][dataPos];
+						dataPos++;
+					}
+					// ASSIGN function call with at lease 1 para
+					if (inputString[2][dataPos + 1] != ')') {
+						while (inputString[2][dataPos + 1] != ')') {
+							if (inputString[2][dataPos + 1] == ',') {
+								commaCount++;
+								dataPos++;
+								continue;
+							}
+							para_funcCall[commaCount] += inputString[2][dataPos + 1];
+							dataPos++;
+						}
+						assign(inputString[1], name_funcCall, para_funcCall, true);
+					}
+					// ASSIGN function call with no para
+					else assign(inputString[1], name_funcCall, nullptr, true);
 				}
+				// ASSIGN with type "string" or "number"
+				else assign(inputString[1], inputString[2], nullptr, false);
+			}
+			else if (inputString[0] == "BEGIN")
+				begin();
+			else if (inputString[0] == "END")
+				end();
+			else if (inputString[0] == "LOOKUP")
+				lookup(inputString[1]);
+			else if (inputString[0] == "PRINT")
+				print();
+			else {
+				string error = inputString[0] + " " + inputString[1] + " " + inputString[2] + " " + inputString[3];
+				throw InvalidInstruction(error);
 			}
 		}
 		if (currentScope > 0)
