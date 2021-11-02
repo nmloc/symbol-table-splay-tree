@@ -145,10 +145,10 @@ public:
 
 		if (id.compare(node->id) < 0) {
 			compareNum++;
-			return lookupRecursive(node->left, id, compareNum);
+			return lookupRecursive(node->right, id, compareNum);
 		}
 		compareNum++;
-		return lookupRecursive(node->right, id, compareNum);
+		return lookupRecursive(node->left, id, compareNum);
 	}
 
 	void preOrderTraversal(Symbol *node) {
@@ -168,9 +168,9 @@ public:
 			}
 
 			if (node->id.compare(id) <= 0) {
-				node = node->right;
-			} else {
 				node = node->left;
+			} else {
+				node = node->right;
 			}
 		}
 
@@ -193,10 +193,9 @@ public:
 
 	void deleteInPreOrder(Symbol *node) {
 		if (node != nullptr) {
-			cout << node->id << endl;
-			preOrderTraversal(node->left);
-			preOrderTraversal(node->right);
-			if (node->scopeLevel == currentScope && node->scopeLevel != 0) {
+			deleteInPreOrder(node->left);
+			deleteInPreOrder(node->right);
+			if (node->scopeLevel == currentScope && node->scopeLevel > 0) {
 				deleteNode(node->id);
 			}
 		} 

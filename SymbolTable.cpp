@@ -59,31 +59,54 @@ void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string
 
     Symbol *y = nullptr;
     Symbol *x = this->root;
+	// find appropriate position for node
     while (x != nullptr) {
         y = x;
-        if (node->id.compare(x->id) < 0) {
-            x = x->left;
-        } else {
-            x = x->right;
-        }
-		compareNum++;
+		if (node->scopeLevel < x->scopeLevel) {
+			x = x->left;
+			compareNum++;
+		}
+		else if (node->scopeLevel > x->scopeLevel) {
+			x = x->right;
+			compareNum++;
+		}
+		else {
+			if (node->id.compare(x->id) < 0) {
+				//x = x->left;
+				x = x->right;
+			} else {
+				//x = x->right;
+				x = x->left;
+			}
+			compareNum++;
+		}
+    }
+	
+    // choose left or right of parent to add node
+	if (y == nullptr) {
+      root = node;
+    }
+    else if(node->scopeLevel < y->scopeLevel){
+		y->left = node;
+    }
+    else if(node->scopeLevel > y->scopeLevel){
+		y->right = node;
+    }
+    else
+    {
+		if(node->id.compare(y->id) < 0) {
+			//y->left = node;
+			y->right = node;
+		} else {
+			//y->right = node;
+			y->left = node;
+		}
     }
 
-    // y is parent of x
-    node->parent = y;
-    if (y == nullptr) {
-        root = node;
-    } else if (node->id.compare(y->id) < 0) {
-        y->left = node;
-		//compareNum++;
-    } else {
-        y->right = node;
-		//compareNum++;
-    }
 
     // splay the node
-	while (node->id.compare(root->id) != 0) {
-    	splay(node);
+	if (node != root) {
+		splay(node);
 		splayNum++;
 	}
 
@@ -112,10 +135,8 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 		if (foundID == nullptr) throw Undeclared(error);
 		else {
 			int splayNum_id = 0;
-			while (foundID->id.compare(root->id) != 0) {
-				splay(foundID);
-				splayNum_id++;
-			}
+			splay(foundID);
+			splayNum_id++;
 			if (foundID->retType == "number")
 				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
@@ -125,10 +146,8 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 		if (foundID == nullptr) throw Undeclared(error);
 		else {
 			int splayNum_id = 0;
-			while (foundID->id.compare(root->id) != 0) {
-				splay(foundID);
-				splayNum_id++;
-			}
+			splay(foundID);
+			splayNum_id++;
 			if (foundID->retType == "string") 
 				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
@@ -138,10 +157,8 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 		if (foundID == nullptr) throw Undeclared(error);
 		else {
 			int splayNum_id = 0;
-			while (foundID->id.compare(root->id) != 0) {
-				splay(foundID);
-				splayNum_id++;
-			}
+			splay(foundID);
+			splayNum_id++;
 			int compareNum_value = 0;
 			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
 			if (foundValue) {
@@ -167,10 +184,8 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 			if (foundID == nullptr) throw Undeclared(error);
 			else if (foundValue->retType == foundID->retType) {
 				int splayNum_id = 0;
-				while (foundID->id.compare(root->id) != 0) {
-					splay(foundID);
-					splayNum_id++;
-				}
+				splay(foundID);
+				splayNum_id++;
 				cout << compareNum_id + compareNum_value << " " << splayNum_id << endl;
 			}
 			else throw TypeMismatch(error);
@@ -200,10 +215,8 @@ void SymbolTable::lookup(string id) {
 	Symbol *x = lookupRecursive(this->root, id, compareNum);
     if (x) {
 		int splayNum = 0;
-		while (x->id.compare(root->id) != 0) {
-			splay(x);
-			splayNum++;
-		}
+		splay(x);
+		splayNum++;
 		cout << x->scopeLevel << endl;
 	}
 	else {
