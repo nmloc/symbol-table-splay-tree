@@ -133,15 +133,22 @@ public:
 		return node;
 	}
 
-	Symbol* lookupRecursive(Symbol *node, string id) {
-		if (node == nullptr || id.compare(node->id) == 0) {
+	Symbol* lookupRecursive(Symbol *node, string id, int compareNum) {
+		if (node == nullptr) {
+			return node;
+		}
+
+		if (id.compare(node->id) == 0) {
+			compareNum++;
 			return node;
 		}
 
 		if (id.compare(node->id) < 0) {
-			return lookupRecursive(node->left, id);
-		} 
-		return lookupRecursive(node->right, id);
+			compareNum++;
+			return lookupRecursive(node->left, id, compareNum);
+		}
+		compareNum++;
+		return lookupRecursive(node->right, id, compareNum);
 	}
 
 	void preOrderTraversal(Symbol *node) {

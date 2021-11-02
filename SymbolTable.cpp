@@ -2,7 +2,7 @@
 
 void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string retType, bool isStatic, bool isFunction) {
 	// Check Invalid Declaration
-	if (sizeOfParaList > 0 && currentScope != 0) {
+	if (isFunction && currentScope != 0) {
 		string subError;
 		if (paraList != nullptr) {
 			subError = '(' + paraList[0];
@@ -15,23 +15,28 @@ void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string
 		string error = "INSERT " + id + " " + subError + retType + " " + boolToString(isStatic);
 		throw InvalidDeclaration(error);
 	}
+
 	// Check Redeclare
-	int compareNum_forCheck = 0;
-	Symbol *foundID = lookupRecursive(root, id, compareNum_forCheck);
-	if (foundID->id == id) {
-		string subError;
-		if (paraList != nullptr) {
-			subError = '(' + paraList[0];
-			for (int i = 1; i < sizeOfParaList; i++) {
-				subError = subError + ',' + paraList[i];
+	if (root) {
+		int compareNum_forCheck = 0;
+		Symbol *foundID = lookupRecursive(root, id, compareNum_forCheck);
+		if (foundID) {
+			if (foundID->id == id) {
+				string subError;
+				if (paraList != nullptr) {
+					subError = '(' + paraList[0];
+					for (int i = 1; i < sizeOfParaList; i++) {
+						subError = subError + ',' + paraList[i];
+					}
+					subError += ")->";
+				}
+
+				string error = "INSERT " + id + " " + subError + retType + " " + boolToString(isStatic);
+				throw Redeclared(error);
 			}
-			subError += ")->";
 		}
-
-		string error = "INSERT " + id + " " + subError + retType + " " + boolToString(isStatic);
-		throw Redeclared(error);
 	}
-
+	
 	int compareNum = 0;
 	int splayNum = 0;
 	Symbol *node = new Symbol();
@@ -54,7 +59,6 @@ void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string
 
     Symbol *y = nullptr;
     Symbol *x = this->root;
-
     while (x != nullptr) {
         y = x;
         if (node->id.compare(x->id) < 0) {
@@ -102,32 +106,40 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 	}
 	string error = "ASSIGN " + id + " " + value + subError;
 
-	int compareNum = 0;
-	Symbol *foundID = lookupRecursive(root, id, compareNum);
+	int compareNum_id = 0;
+	Symbol *foundID = lookupRecursive(root, id, compareNum_id);
 	if (foundID) {
+		int splayNum_id = 0;
+		splay(foundID);
+		splayNum_id++;
+
 		if (regex_match(value, rNum)) {
 			if (foundID->retType == "number") 
-				cout << compareNum << " " << "num of splay" << endl;
+				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
 		}
 		else if (regex_match(value, rString)) {
 			if (foundID->retType == "string") 
-				cout << compareNum << " " << "num of splay" << endl;
+				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
 		}
 		else if (regex_match(value, rId) && !isFunction) {
-			int compareNum = 0;
-			Symbol *foundValue = lookupRecursive(root, value, compareNum);
+			int compareNum_value = 0;
+			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
 			if (foundValue) {
-				if (foundValue->retType == foundID->retType)
-					cout << compareNum << " " << "num of splay" << endl;
+				if (foundValue->retType == foundID->retType) {
+					int splayNum_value = 0;
+					splay(foundValue);
+					splayNum_value++;
+					cout << compareNum_id + compareNum_value << " " << splayNum_id + splayNum_value << endl;
+				}
 				else throw TypeMismatch(error);
 			}
 			else throw Undeclared(error);
 		}
 		else if (regex_match(value, rId) && isFunction) {
-			int compareNum = 0;
-			Symbol *foundValue = lookupRecursive(root, value, compareNum);
+			int compareNum_value = 0;
+			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
 			if (foundValue) {
 				if (foundValue->retType == foundID->retType) {
 					for (int i = 0; i < sizeOfParaList; i++) {
@@ -139,7 +151,10 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 							throw TypeMismatch(error);
 						}
 					}
-					cout << compareNum << " " << "num of splay" << endl;
+					int splayNum_value = 0;
+					splay(foundValue);
+					splayNum_value++;
+					cout << compareNum_id + compareNum_value << " " << splayNum_id + splayNum_value << endl;
 				}
 				else throw TypeMismatch(error);
 			}
@@ -232,9 +247,10 @@ void SymbolTable::run(string filename)
 					for (int i = 0; i < eleNum_funcType - 1; i++) {
 						args_funcType[i] = funcType[i];
 					}
-					if (inputString[2][0] == '(' && inputString[2][1] != ')')
+					if (inputString[2][0] == '(' && inputString[2][1] != ')') {
 					// INSERT function type with at least 1 para
 						insert(inputString[1], args_funcType, eleNum_funcType - 1, retType, stringToBool(inputString[3]), true);
+					}
 					else
 					// INSERT function type with no para
 						insert(inputString[1], nullptr, 0, funcType[0], stringToBool(inputString[3]), true);

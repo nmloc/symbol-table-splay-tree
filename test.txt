@@ -1,3 +1,4 @@
-INSERT a1 number false
-INSERT b2 string false
-INSERT b1 (number,number)->string false
+INSERT x number false
+INSERT sum (number,number)->number false
+ASSIGN x sum(1,1)
+ASSIGN z sum(12,’abc’)
