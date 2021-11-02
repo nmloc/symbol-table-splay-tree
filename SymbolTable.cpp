@@ -21,7 +21,7 @@ void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string
 		int compareNum_forCheck = 0;
 		Symbol *foundID = lookupRecursive(root, id, compareNum_forCheck);
 		if (foundID) {
-			if (foundID->id == id) {
+			if (foundID->id == id && foundID->scopeLevel == currentScope) {
 				string subError;
 				if (paraList != nullptr) {
 					subError = '(' + paraList[0];
@@ -95,7 +95,7 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
     regex rNum("[0-9]+");
 	regex rString("['][ a-zA-Z0-9]*[']");
 	regex rId("[a-z][_a-zA-Z0-9]*");
-	
+
 	string subError = "";
 	if (paraList != nullptr) {
 		subError = '(' + paraList[0];
@@ -108,63 +108,78 @@ void SymbolTable::assign(string id, string value, string *paraList, int sizeOfPa
 
 	int compareNum_id = 0;
 	Symbol *foundID = lookupRecursive(root, id, compareNum_id);
-	if (foundID) {
-		int splayNum_id = 0;
-		splay(foundID);
-		splayNum_id++;
-
-		if (regex_match(value, rNum)) {
-			if (foundID->retType == "number") 
+	if (regex_match(value, rNum)) {
+		if (foundID == nullptr) throw Undeclared(error);
+		else {
+			int splayNum_id = 0;
+			while (foundID->id.compare(root->id) != 0) {
+				splay(foundID);
+				splayNum_id++;
+			}
+			if (foundID->retType == "number")
 				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
 		}
-		else if (regex_match(value, rString)) {
+	}
+	else if (regex_match(value, rString)) {
+		if (foundID == nullptr) throw Undeclared(error);
+		else {
+			int splayNum_id = 0;
+			while (foundID->id.compare(root->id) != 0) {
+				splay(foundID);
+				splayNum_id++;
+			}
 			if (foundID->retType == "string") 
 				cout << compareNum_id << " " << splayNum_id << endl;
 			else throw TypeMismatch(error);
 		}
-		else if (regex_match(value, rId) && !isFunction) {
-			int compareNum_value = 0;
-			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
-			if (foundValue) {
-				if (foundValue->retType == foundID->retType) {
-					int splayNum_value = 0;
-					splay(foundValue);
-					splayNum_value++;
-					cout << compareNum_id + compareNum_value << " " << splayNum_id + splayNum_value << endl;
-				}
-				else throw TypeMismatch(error);
-			}
-			else throw Undeclared(error);
-		}
-		else if (regex_match(value, rId) && isFunction) {
-			int compareNum_value = 0;
-			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
-			if (foundValue) {
-				if (foundValue->retType == foundID->retType) {
-					for (int i = 0; i < sizeOfParaList; i++) {
-						if (regex_match(paraList[i], rNum) && foundID->paraList[i] == "number")
-							continue;
-						else if (regex_match(paraList[i], rString) && foundID->paraList[i] == "string")
-							continue;
-						else {
-							throw TypeMismatch(error);
-						}
-					}
-					int splayNum_value = 0;
-					splay(foundValue);
-					splayNum_value++;
-					cout << compareNum_id + compareNum_value << " " << splayNum_id + splayNum_value << endl;
-				}
-				else throw TypeMismatch(error);
-			}
-			else throw Undeclared(error);
-		}
-		else throw TypeMismatch(error);
 	}
-	else throw Undeclared(error);
+	else if (regex_match(value, rId) && isFunction == false) {
+		if (foundID == nullptr) throw Undeclared(error);
+		else {
+			int splayNum_id = 0;
+			while (foundID->id.compare(root->id) != 0) {
+				splay(foundID);
+				splayNum_id++;
+			}
+			int compareNum_value = 0;
+			Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
+			if (foundValue) {
+				if (foundValue->retType == foundID->retType) {
+					cout << compareNum_id + compareNum_value << " " << splayNum_id << endl;
+				}
+				else throw TypeMismatch(error);
+			}
+			else throw Undeclared(error);
+		}
+	}
+	else if (regex_match(value, rId) && isFunction == true) {
+		int compareNum_value = 0;
+		Symbol *foundValue = lookupRecursive(root, value, compareNum_value);
+		if (foundValue) {
+			for (int i = 0; i < sizeOfParaList; i++) {
+				if (regex_match(paraList[i], rNum) && foundValue->paraList[i] == "number")
+					continue;
+				else if (regex_match(paraList[i], rString) && foundValue->paraList[i] == "string")
+					continue;
+				else throw TypeMismatch(error);
+			}
+			if (foundID == nullptr) throw Undeclared(error);
+			else if (foundValue->retType == foundID->retType) {
+				int splayNum_id = 0;
+				while (foundID->id.compare(root->id) != 0) {
+					splay(foundID);
+					splayNum_id++;
+				}
+				cout << compareNum_id + compareNum_value << " " << splayNum_id << endl;
+			}
+			else throw TypeMismatch(error);
+		}
+		else throw Undeclared(error);
+	}
+	else throw TypeMismatch(error);
 }
-
+	
 void SymbolTable::begin() {
     this->currentScope++;
 
@@ -184,7 +199,11 @@ void SymbolTable::lookup(string id) {
 	int compareNum = 0;
 	Symbol *x = lookupRecursive(this->root, id, compareNum);
     if (x) {
-		splay(x);
+		int splayNum = 0;
+		while (x->id.compare(root->id) != 0) {
+			splay(x);
+			splayNum++;
+		}
 		cout << x->scopeLevel << endl;
 	}
 	else {
@@ -221,6 +240,7 @@ void SymbolTable::run(string filename)
 				}
 				currPos++;
 			}
+			int length = inputString[2].length();
 			// INSERT cmd
 			if (inputString[0] == "INSERT") {
 				int eleNum_funcType = 1;
@@ -228,12 +248,12 @@ void SymbolTable::run(string filename)
 				if (inputString[2][0] == '(' && inputString[2][1] != ')') {
 					eleNum_funcType++;
 					// split value of function type
-					for (int i = 0; i < inputString[2].length(); i++) {
+					for (int i = 0; i < length; i++) {
 						if (inputString[2][i] == ',') eleNum_funcType++;
 					}
 					string funcType[10];
 					int i = 0;
-					for (int j = 0; j < inputString[2].length(); j++) {
+					for (int j = 0; j < length; j++) {
 						if (inputString[2][j] == '(' || inputString[2][j] == ')' || inputString[2][j] == '-')
 							continue;
 						else if (inputString[2][j] == ',' || inputString[2][j] == '>') {
@@ -261,7 +281,7 @@ void SymbolTable::run(string filename)
 			// ASSIGN cmd
 			else if (inputString[0] == "ASSIGN") {
 				// split value of function call
-				if (inputString[2][inputString[2].length() - 1] == ')') {
+				if (inputString[2][length - 1] == ')') {
 					string name_funcCall;
 					string para_funcCall[10];
 					int dataPos = 0;

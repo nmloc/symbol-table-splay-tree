@@ -6,7 +6,7 @@ class Symbol {
 public:
     string id;
 	bool isFunction;
-    string paraList[10]; // array of list of para in function type
+    string paraList[10];
     string retType;
     int scopeLevel;
     Symbol *parent, *left, *right;
@@ -133,7 +133,7 @@ public:
 		return node;
 	}
 
-	Symbol* lookupRecursive(Symbol *node, string id, int compareNum) {
+	Symbol* lookupRecursive(Symbol *node, string id, int &compareNum) {
 		if (node == nullptr) {
 			return node;
 		}
