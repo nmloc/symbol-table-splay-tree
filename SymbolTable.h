@@ -203,7 +203,7 @@ public:
 		return b ? "true" : "false";
 	}
 	inline void insert(string id, string *paraList, int sizeOfParaList, string retType, bool isStatic, bool isFunction);
-	inline void assign(string id, string value, string *paraList, bool isFunction);
+	inline void assign(string id, string value, string *paraList, int sizeOfParaList, bool isFunction);
 	inline void begin();
 	inline void end();
 	inline void lookup(string id);
