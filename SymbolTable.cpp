@@ -72,10 +72,8 @@ void SymbolTable::insert(string id, string *paraList, int sizeOfParaList, string
 		}
 		else {
 			if (node->id.compare(x->id) < 0) {
-				//x = x->left;
 				x = x->right;
 			} else {
-				//x = x->right;
 				x = x->left;
 			}
 			compareNum++;
@@ -212,12 +210,10 @@ void SymbolTable::end() {
 
 void SymbolTable::lookup(string id) {
 	int compareNum = 0;
-	Symbol *x = lookupRecursive(this->root, id, compareNum);
-    if (x) {
-		int splayNum = 0;
-		splay(x);
-		splayNum++;
-		cout << x->scopeLevel << endl;
+	Symbol *foundID = lookupRecursive(this->root, id, compareNum);
+    if (foundID) {
+		splay(foundID);
+		cout << foundID->scopeLevel << endl;
 	}
 	else {
 		string error = "LOOKUP " + id;

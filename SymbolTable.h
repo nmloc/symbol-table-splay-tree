@@ -153,7 +153,7 @@ public:
 
 	void preOrderTraversal(Symbol *node) {
 		if (node != nullptr) {
-			cout << node->id << endl;
+			cout << node->id << "//" << node->scopeLevel << " ";
 			preOrderTraversal(node->left);
 			preOrderTraversal(node->right);
 		} 
@@ -168,9 +168,9 @@ public:
 			}
 
 			if (node->id.compare(id) <= 0) {
-				node = node->left;
-			} else {
 				node = node->right;
+			} else {
+				node = node->left;
 			}
 		}
 
